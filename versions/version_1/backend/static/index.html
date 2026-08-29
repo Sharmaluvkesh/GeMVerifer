@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeMVerifier - AI-Powered GeM Tender & Bid Verification Engine</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            gov: {
+              navy: '#0B1E36',
+              blue: '#1E3A8A',
+              saffron: '#FF671F',
+              green: '#046A38',
+            }
+          },
+          animation: {
+            'marquee': 'marquee 20s linear infinite',
+            'float-bounce': 'floatBounce 3s ease-in-out infinite',
+            'mascot-wave': 'mascotWave 2s ease-in-out infinite',
+            'spin-slow': 'spin 14s linear infinite',
+            'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
+          },
+          keyframes: {
+            marquee: {
+              '0%': { transform: 'translateX(100%)' },
+              '100%': { transform: 'translateX(-100%)' },
+            },
+            floatBounce: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-12px)' },
+            },
+            mascotWave: {
+              '0%, 100%': { transform: 'rotate(-6deg) translateY(0)' },
+              '50%': { transform: 'rotate(6deg) translateY(-8px)' },
+            },
+            pulseGlow: {
+              '0%, 100%': { opacity: 1, filter: 'drop-shadow(0 0 15px rgba(255, 103, 31, 0.6))' },
+              '50%': { opacity: 0.85, filter: 'drop-shadow(0 0 25px rgba(255, 103, 31, 0.9))' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #f8fafc;
+      color: #0f172a;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(255, 103, 31, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(14, 165, 233, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(4, 106, 56, 0.12) 0px, transparent 50%);
+      background-attachment: fixed;
+    }
+    .pop-card {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.05);
+      border-radius: 1.5rem;
+      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transform-origin: center;
+      position: relative;
+    }
+    .pop-card:hover {
+      transform: scale(1.08) translateY(-10px);
+      box-shadow: 0 30px 40px -10px rgba(15, 23, 42, 0.15), 0 12px 20px -6px rgba(15, 23, 42, 0.1);
+      z-index: 35;
+      border-color: #FF671F;
+    }
+    header.scrolled {
+      padding-top: 0.25rem;
+      padding-bottom: 0.25rem;
+      box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.1);
+    }
+    header.scrolled .brand-logo {
+      width: 2.25rem;
+      height: 2.25rem;
+    }
+    header.scrolled .brand-title {
+      font-size: 1.25rem;
+    }
+    .gov-panel {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.04);
+      border-radius: 1.5rem;
+    }
+    .gov-tricolor-line {
+      background: linear-gradient(to right, #FF671F 0%, #FF671F 33.33%, #000080 33.33%, #000080 66.66%, #046A38 66.66%, #046A38 100%);
+      height: 4px;
+    }
+    .view-section {
+      display: none;
+    }
+    .view-section.active {
+      display: block;
+      animation: fadeIn 0.4s ease-out forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .carousel-track {
+      display: flex;
+      gap: 1.25rem;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #scroll-orbit-ring {
+      position: fixed;
+      top: 25%;
+      right: -80px;
+      width: 280px;
+      height: 280px;
+      pointer-events: none;
+      z-index: 10;
+      opacity: 0.25;
+      transition: transform 0.1s ease-out;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased bg-slate-50 text-slate-900 overflow-x-hidden">
+
+  <!-- SCROLL ORBIT RING -->
+  <div id="scroll-orbit-ring" class="hidden md:block">
+    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" class="w-full h-full text-blue-900">
+      <circle cx="100" cy="100" r="90" fill="none" stroke="#FF671F" stroke-width="3" stroke-dasharray="12 8" />
+      <circle cx="100" cy="100" r="70" fill="none" stroke="#000080" stroke-width="2" stroke-dasharray="20 10" />
+      <circle cx="100" cy="100" r="50" fill="none" stroke="#046A38" stroke-width="2.5" stroke-dasharray="8 6" />
+      <circle cx="100" cy="10" r="8" fill="#FF671F" />
+      <circle cx="190" cy="100" r="7" fill="#000080" />
+      <circle cx="100" cy="190" r="8" fill="#046A38" />
+    </svg>
+  </div>
+
+  <!-- ALWAYS-VISIBLE STICKY FLOATING GEM-BOT MASCOT -->
+  <div id="sticky-gem-bot" class="fixed bottom-6 right-6 z-50 flex items-center space-x-3 group cursor-pointer">
+    <div class="bg-white border-2 border-[#FF671F] text-slate-900 px-3.5 py-2 rounded-2xl shadow-2xl text-xs font-extrabold flex items-center gap-2 group-hover:scale-105 transition-transform">
+      <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+      <span>Hi! I'm <strong>GeM-Bot</strong> 🤖 Click to ask AI!</span>
+    </div>
+    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-[#FF671F] via-orange-500 to-amber-600 text-white flex items-center justify-center shadow-2xl animate-float-bounce border-4 border-white animate-pulse-glow group-hover:scale-110 transition-transform">
+      <i data-lucide="bot" class="w-9 h-9 animate-mascot-wave"></i>
+    </div>
+  </div>
+
+  <!-- Marquee Ticker -->
+  <div class="bg-[#0B1E36] text-white text-xs py-1.5 px-4 overflow-hidden flex items-center border-b border-slate-700">
+    <span class="bg-[#FF671F] font-bold px-2.5 py-0.5 rounded text-[10px] uppercase tracking-wider shrink-0 mr-3 animate-pulse shadow-sm">
+      🔴 GeMVerifier Live
+    </span>
+    <div class="overflow-hidden relative w-full">
+      <div class="animate-marquee whitespace-nowrap font-medium text-slate-200 text-[11px]">
+        🛡️ <strong>GeMVerifier Engine:</strong> Custom Bid GEM/2026/B/8941205 evaluation complete • Click OEM Company cards below to run instant product catalog pre-checks!
+      </div>
+    </div>
+  </div>
+
+  <!-- Header Bar -->
+  <header id="main-header" class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm transition-all duration-300">
+    <div class="bg-white border-b border-slate-100 px-6 py-1 text-[11px] font-semibold text-slate-600 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <span class="text-slate-800 font-bold">GOVERNMENT OF INDIA</span>
+        <span>|</span>
+        <span>Ministry of Commerce & Industry</span>
+        <span>|</span>
+        <span class="text-blue-800 font-bold">Smart India Hackathon (SIH)</span>
+      </div>
+      <div class="flex items-center space-x-4">
+        <span class="text-emerald-700 font-bold flex items-center gap-1">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i> GeMVerifier Certified Engine
+        </span>
+      </div>
+    </div>
+
+    <div class="gov-tricolor-line"></div>
+
+    <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between transition-all duration-300">
+      <div class="flex items-center space-x-3.5">
+        <div id="brand-logo" class="brand-logo w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-900 via-indigo-900 to-[#0B1E36] text-white flex items-center justify-center shadow-md border border-blue-700/40 animate-mascot-wave transition-all duration-300">
+          <i data-lucide="badge-check" class="w-7 h-7 text-[#FF671F]"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 id="brand-title" class="brand-title text-2xl font-black tracking-tight text-[#0B1E36] font-display transition-all duration-300">
+              GeM<span class="text-[#FF671F]">Verifier</span>
+            </h1>
+            <span class="text-[10px] uppercase font-extrabold px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 text-amber-900 border border-amber-300 shadow-sm">
+              v1.0 AI Engine
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 font-semibold">Government e-Marketplace Automated Technical Verification Engine</p>
+        </div>
+      </div>
+
+      <div id="auth-widget">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <div class="bg-[#0B1E36] text-white px-6">
+      <div class="max-w-7xl mx-auto flex items-center space-x-1 overflow-x-auto py-1.5">
+        <button id="nav-overview" class="nav-tab px-4 py-2 text-xs font-bold rounded-xl transition-all bg-[#FF671F] text-white shadow-md flex items-center gap-2">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+          <span>Command Dashboard</span>
+        </button>
+
+        <button id="nav-buyer" class="nav-tab px-4 py-2 text-xs font-bold rounded-xl transition-all text-slate-200 hover:bg-blue-800 flex items-center gap-2">
+          <i data-lucide="building-2" class="w-4 h-4 text-amber-400"></i>
+          <span>Buyer Portal (Procurement)</span>
+        </button>
+
+        <button id="nav-vendor" class="nav-tab px-4 py-2 text-xs font-bold rounded-xl transition-all text-slate-200 hover:bg-blue-800 flex items-center gap-2">
+          <i data-lucide="user-check" class="w-4 h-4 text-emerald-400"></i>
+          <span>Vendor Portal (Pre-Check)</span>
+        </button>
+
+        <button id="nav-matrix" class="nav-tab px-4 py-2 text-xs font-bold rounded-xl transition-all text-slate-200 hover:bg-blue-800 flex items-center gap-2">
+          <i data-lucide="filter" class="w-4 h-4 text-cyan-400"></i>
+          <span>Verification Matrix</span>
+        </button>
+
+        <button id="nav-account" class="nav-tab px-4 py-2 text-xs font-bold rounded-xl transition-all text-slate-200 hover:bg-blue-800 flex items-center gap-2">
+          <i data-lucide="user" class="w-4 h-4 text-purple-300"></i>
+          <span>Account & Role Settings</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main View Content -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 space-y-12">
+
+    <!-- VIEW 1: COMMAND DASHBOARD -->
+    <section id="view-overview" class="view-section active space-y-12">
+      
+      <!-- Moving Cards Carousel Header -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xl font-extrabold text-[#0B1E36] font-display flex items-center gap-2">
+              <i data-lucide="sparkles" class="w-5 h-5 text-[#FF671F] animate-pulse"></i>
+              GeMVerifier Live Pop-Out Cards
+            </h2>
+            <p class="text-xs text-slate-500">Hover over cards below to see pop-out scale animations!</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button id="carousel-prev-btn" class="w-9 h-9 rounded-full bg-white border border-slate-300 text-slate-700 hover:bg-blue-800 hover:text-white transition-all flex items-center justify-center shadow-sm font-bold text-sm">‹</button>
+            <button id="carousel-next-btn" class="w-9 h-9 rounded-full bg-white border border-slate-300 text-slate-700 hover:bg-blue-800 hover:text-white transition-all flex items-center justify-center shadow-sm font-bold text-sm">›</button>
+          </div>
+        </div>
+
+        <div class="overflow-hidden rounded-2xl p-2 py-4">
+          <div id="carousel-track" class="carousel-track">
+            
+            <div class="pop-card min-w-[320px] md:min-w-[360px] bg-gradient-to-br from-blue-900 via-indigo-900 to-[#0B1E36] text-white p-6 rounded-2xl shadow-xl border border-blue-700/50 flex flex-col justify-between space-y-4 shrink-0">
+              <div class="flex items-center justify-between">
+                <span class="bg-[#FF671F] text-white font-extrabold px-3 py-0.5 rounded-full text-[10px] uppercase shadow-sm">
+                  Active Tender
+                </span>
+                <span class="text-xs text-blue-200 font-mono font-bold">GEM/2026/B/8941205</span>
+              </div>
+              <div>
+                <h3 class="font-black text-lg font-display text-white">Workstation Laptops Tender</h3>
+                <p class="text-xs text-blue-100 mt-1 leading-relaxed">Required: Intel i7/AMD 7840HS • 32GB DDR5 • 1TB SSD • 3 Yr Onsite OEM Warranty</p>
+              </div>
+              <div class="flex items-center justify-between pt-3 border-t border-blue-800/80 text-xs">
+                <span class="text-emerald-400 font-bold flex items-center gap-1">
+                  <i data-lucide="check-circle-2" class="w-4 h-4"></i> 3 Vendor Bids Analyzed
+                </span>
+                <button onclick="switchView('matrix')" class="px-3.5 py-1.5 bg-white text-blue-900 font-extrabold rounded-xl hover:bg-blue-50 shadow-sm text-xs">View Matrix</button>
+              </div>
+            </div>
+
+            <div class="pop-card min-w-[320px] md:min-w-[360px] bg-gradient-to-br from-emerald-50 via-teal-50 to-green-100 text-slate-900 p-6 rounded-2xl shadow-md border-2 border-emerald-500/80 flex flex-col justify-between space-y-4 shrink-0">
+              <div class="flex items-center justify-between">
+                <span class="bg-emerald-600 text-white font-extrabold px-3 py-0.5 rounded-full text-[10px] uppercase shadow-sm">
+                  Verified Qualified
+                </span>
+                <span class="text-xs text-emerald-800 font-black">100% Score</span>
+              </div>
+              <div>
+                <h3 class="font-black text-lg font-display text-slate-900">TechNova Solutions Ltd</h3>
+                <p class="text-xs text-slate-600 mt-1">Bid Ref: BID-GEM-9901 • Intel i7-13700H (14 Cores) • 32GB DDR5 • 1TB SSD • 3 Yr Warranty</p>
+              </div>
+              <div class="flex items-center justify-between pt-3 border-t border-emerald-200/80 text-xs">
+                <span class="text-emerald-800 font-extrabold flex items-center gap-1">
+                  <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i> All 6 Specs Passed
+                </span>
+                <span class="bg-emerald-200/80 text-emerald-950 text-[10px] font-bold px-2.5 py-1 rounded-lg">QUALIFIED</span>
+              </div>
+            </div>
+
+            <div class="pop-card min-w-[320px] md:min-w-[360px] bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 text-slate-900 p-6 rounded-2xl shadow-md border-2 border-amber-400/80 flex flex-col justify-between space-y-4 shrink-0">
+              <div class="flex items-center justify-between">
+                <span class="bg-amber-500 text-white font-extrabold px-3 py-0.5 rounded-full text-[10px] uppercase shadow-sm">
+                  Pre-Check Qualified
+                </span>
+                <span class="text-xs text-amber-900 font-black">94.1% Score</span>
+              </div>
+              <div>
+                <h3 class="font-black text-lg font-display text-slate-900">Paramount Enterprises</h3>
+                <p class="text-xs text-slate-700 mt-1">AMD Ryzen 7 7840HS • 64GB DDR5 • 2TB SSD • Display Ratio Needs Review</p>
+              </div>
+              <div class="flex items-center justify-between pt-3 border-t border-amber-200 text-xs">
+                <span class="text-amber-900 font-bold">Needs Review (Display)</span>
+                <button onclick="switchView('vendor')" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl shadow-sm text-xs">Pre-Check</button>
+              </div>
+            </div>
+
+            <div class="pop-card min-w-[320px] md:min-w-[360px] bg-gradient-to-br from-rose-50 via-pink-50 to-rose-100 text-slate-900 p-6 rounded-2xl shadow-md border-2 border-rose-400/80 flex flex-col justify-between space-y-4 shrink-0">
+              <div class="flex items-center justify-between">
+                <span class="bg-rose-600 text-white font-extrabold px-3 py-0.5 rounded-full text-[10px] uppercase shadow-sm">
+                  Disqualified Alert
+                </span>
+                <span class="text-xs text-rose-800 font-black">64.7% Score</span>
+              </div>
+              <div>
+                <h3 class="font-black text-lg font-display text-slate-900">Apex Micro Systems</h3>
+                <p class="text-xs text-rose-900 mt-1 font-medium">Failed mandatory Processor spec (6 Cores vs 14 required). Missing ISO & Turnover certificates.</p>
+              </div>
+              <div class="flex items-center justify-between pt-3 border-t border-rose-200 text-xs">
+                <span class="text-rose-800 font-bold flex items-center gap-1">
+                  <i data-lucide="shield-alert" class="w-4 h-4 text-rose-600"></i> Disqualified
+                </span>
+                <span class="bg-rose-200 text-rose-950 text-[10px] font-bold px-2.5 py-1 rounded-lg">2 Failures</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- BIGGER OEM COMPANY PRODUCT CARDS WITH PHOTOS & LOGOS + FUNCTIONALITY -->
+      <div class="space-y-6">
+        <div class="flex items-center space-x-3">
+          <div class="w-12 h-12 rounded-2xl bg-[#FF671F] text-white flex items-center justify-center font-bold shadow-md animate-float-bounce shrink-0">
+            <i data-lucide="bot" class="w-7 h-7 animate-mascot-wave"></i>
+          </div>
+          <div>
+            <h3 class="text-2xl font-black text-slate-900 font-display">Verified OEM Suppliers & Hardware Hardware Showcase</h3>
+            <p class="text-xs text-slate-500 font-medium">Click any company card below to run an instant product catalog pre-check & inspect certificates!</p>
+          </div>
+        </div>
+
+        <!-- Big OEM Cards Grid with Hardware Photos & Interactive Pre-Check Functionality -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          <!-- OEM Card 1: TechNova Solutions -->
+          <div onclick="openCompanyModal('TechNova Solutions Ltd', '100% Score Qualified', 'Intel Core i7-13700H (14 Cores), 32GB DDR5, 1TB NVMe Gen4 SSD, 3 Yr Onsite OEM Warranty', 'INR 120 Crores', 'CLASS-1 LOCAL SUPPLIER', 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=600&auto=format&fit=crop')" class="pop-card bg-white p-6 rounded-3xl border-2 border-emerald-500/80 cursor-pointer group flex flex-col justify-between space-y-4">
+            <div class="relative h-44 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
+              <img src="https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=600&auto=format&fit=crop" alt="TechNova Laptop" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+              <div class="absolute top-3 left-3 bg-[#0B1E36] text-white text-[10px] font-black px-3 py-1 rounded-xl shadow-md border border-blue-600">
+                TECHNOVA OEM
+              </div>
+              <span class="absolute bottom-3 right-3 bg-emerald-600 text-white font-extrabold text-[10px] px-2.5 py-1 rounded-lg shadow-md">
+                100% MATCH
+              </span>
+            </div>
+            <div>
+              <div class="flex items-center justify-between">
+                <h4 class="font-extrabold text-base text-slate-900 font-display">TechNova Solutions Ltd</h4>
+                <span class="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Class-1 Supplier</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-1">High-Performance Workstation Laptop (Core i7 14 Core, 32GB RAM)</p>
+            </div>
+            <button class="w-full py-2.5 rounded-xl bg-emerald-800 group-hover:bg-emerald-900 text-white font-extrabold text-xs shadow-md flex items-center justify-center gap-2">
+              <span>Run Instant Catalog Pre-Check</span>
+              <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <!-- OEM Card 2: Dell Technologies -->
+          <div onclick="openCompanyModal('Dell Technologies India', '96.5% Pre-Check Score', 'Dell Precision 7680 Workstation, Intel i7-13800H, 32GB DDR5, 1TB NVMe, RTX A2000, 3 Yr ProSupport', 'INR 4,500 Crores', 'VERIFIED GLOBAL OEM', 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=600&auto=format&fit=crop')" class="pop-card bg-white p-6 rounded-3xl border-2 border-blue-500/80 cursor-pointer group flex flex-col justify-between space-y-4">
+            <div class="relative h-44 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
+              <img src="https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=600&auto=format&fit=crop" alt="Dell Workstation" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+              <div class="absolute top-3 left-3 bg-[#0B1E36] text-white text-[10px] font-black px-3 py-1 rounded-xl shadow-md border border-blue-600">
+                DELL PRECISION
+              </div>
+              <span class="absolute bottom-3 right-3 bg-blue-700 text-white font-extrabold text-[10px] px-2.5 py-1 rounded-lg shadow-md">
+                96.5% MATCH
+              </span>
+            </div>
+            <div>
+              <div class="flex items-center justify-between">
+                <h4 class="font-extrabold text-base text-slate-900 font-display">Dell Technologies India</h4>
+                <span class="text-[10px] font-bold text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">Verified OEM</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-1">Precision 7680 Mobile Workstation (Intel i7 13th Gen, ProSupport)</p>
+            </div>
+            <button class="w-full py-2.5 rounded-xl bg-blue-800 group-hover:bg-blue-900 text-white font-extrabold text-xs shadow-md flex items-center justify-center gap-2">
+              <span>Run Instant Catalog Pre-Check</span>
+              <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <!-- OEM Card 3: HP Enterprise -->
+          <div onclick="openCompanyModal('HP India Sales Pvt Ltd', '98.2% Pre-Check Score', 'HP ZBook Studio G10 Workstation, Intel i7-13700H, 32GB DDR5, 1TB SSD, RTX 4060, 3 Yr Onsite Care Pack', 'INR 3,200 Crores', 'ISO 9001 CERTIFIED OEM', 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=600&auto=format&fit=crop')" class="pop-card bg-white p-6 rounded-3xl border-2 border-indigo-500/80 cursor-pointer group flex flex-col justify-between space-y-4">
+            <div class="relative h-44 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
+              <img src="https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=600&auto=format&fit=crop" alt="HP ZBook" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+              <div class="absolute top-3 left-3 bg-[#0B1E36] text-white text-[10px] font-black px-3 py-1 rounded-xl shadow-md border border-blue-600">
+                HP ZBOOK STUDIO
+              </div>
+              <span class="absolute bottom-3 right-3 bg-indigo-700 text-white font-extrabold text-[10px] px-2.5 py-1 rounded-lg shadow-md">
+                98.2% MATCH
+              </span>
+            </div>
+            <div>
+              <div class="flex items-center justify-between">
+                <h4 class="font-extrabold text-base text-slate-900 font-display">HP Enterprise India</h4>
+                <span class="text-[10px] font-bold text-indigo-800 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">ISO 9001 OEM</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-1">ZBook Studio G10 Workstation (Intel Core i7 13th Gen, Care Pack)</p>
+            </div>
+            <button class="w-full py-2.5 rounded-xl bg-indigo-800 group-hover:bg-indigo-900 text-white font-extrabold text-xs shadow-md flex items-center justify-center gap-2">
+              <span>Run Instant Catalog Pre-Check</span>
+              <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ANIMATED MASCOT 1: GeM-Bot Assistant Banner -->
+      <div id="gem-bot-banner" class="cursor-pointer group bg-gradient-to-r from-blue-950 via-indigo-900 to-[#0B1E36] rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 border-2 border-blue-700/50 hover:border-[#FF671F] transition-all">
+        <div class="space-y-3 z-10 max-w-2xl">
+          <div class="inline-flex items-center space-x-2 bg-amber-500/20 border border-amber-400/30 text-amber-300 px-3 py-1 rounded-full text-xs font-bold">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>
+            <span>Interactive AI Assistant • Click to Chat with GeM-Bot</span>
+          </div>
+          <h2 class="text-2xl md:text-3xl font-black font-display text-white group-hover:text-[#FF671F] transition-colors">
+            Ask <span class="text-[#FF671F]">GeM-Bot</span> — AI Verification Assistant & Disqualification Diagnostician!
+          </h2>
+          <p class="text-xs text-blue-100 leading-relaxed font-normal">
+            Click here to ask GeM-Bot questions like <em>"Why was Apex Micro Systems disqualified?"</em>, <em>"Check minimum CPU requirement"</em>, or <em>"List required ISO certificates"</em>.
+          </p>
+        </div>
+
+        <div class="relative shrink-0 flex flex-col items-center justify-center space-y-2">
+          <div class="w-32 h-32 md:w-36 md:h-36 rounded-full bg-gradient-to-br from-[#FF671F] to-amber-500 flex items-center justify-center shadow-2xl animate-float-bounce border-4 border-white/20 group-hover:scale-110 transition-transform">
+            <div class="text-center space-y-1">
+              <i data-lucide="bot" class="w-14 h-14 text-white mx-auto animate-mascot-wave"></i>
+              <span class="text-[10px] uppercase font-black tracking-widest text-blue-950 bg-white/90 px-2 py-0.5 rounded-full shadow-sm">Click to Chat</span>
+            </div>
+          </div>
+          <button type="button" class="px-4 py-1.5 rounded-full bg-[#FF671F] text-white text-xs font-extrabold shadow-md group-hover:bg-amber-500">
+            Open GeM-Bot Drawer 💬
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div class="pop-card p-5 bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 border border-blue-200 flex items-center space-x-4">
+          <div class="w-12 h-12 rounded-2xl bg-blue-800 text-white flex items-center justify-center font-bold shadow-md">
+            <i data-lucide="file-text" class="w-6 h-6 animate-bounce-soft"></i>
+          </div>
+          <div>
+            <p class="text-xs font-bold text-blue-900 uppercase">Active Tenders</p>
+            <p class="text-2xl font-black text-slate-900 font-display">12 Published</p>
+          </div>
+        </div>
+
+        <div class="pop-card p-5 bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100 border border-emerald-200 flex items-center space-x-4">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-800 text-white flex items-center justify-center font-bold shadow-md">
+            <i data-lucide="folder-check" class="w-6 h-6 animate-bounce-soft"></i>
+          </div>
+          <div>
+            <p class="text-xs font-bold text-emerald-900 uppercase">Vendor Bids</p>
+            <p class="text-2xl font-black text-slate-900 font-display">38 Proposals</p>
+          </div>
+        </div>
+
+        <div class="pop-card p-5 bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 border border-amber-200 flex items-center space-x-4">
+          <div class="w-12 h-12 rounded-2xl bg-amber-600 text-white flex items-center justify-center font-bold shadow-md">
+            <i data-lucide="bar-chart-3" class="w-6 h-6 animate-bounce-soft"></i>
+          </div>
+          <div>
+            <p class="text-xs font-bold text-amber-900 uppercase">Avg Compliance</p>
+            <p class="text-2xl font-black text-slate-900 font-display">86.2% Score</p>
+          </div>
+        </div>
+
+        <div class="pop-card p-5 bg-gradient-to-br from-rose-50 via-pink-50 to-rose-100 border border-rose-200 flex items-center space-x-4">
+          <div class="w-12 h-12 rounded-2xl bg-rose-700 text-white flex items-center justify-center font-bold shadow-md">
+            <i data-lucide="shield-alert" class="w-6 h-6 animate-bounce-soft"></i>
+          </div>
+          <div>
+            <p class="text-xs font-bold text-rose-900 uppercase">Disqualification</p>
+            <p class="text-2xl font-black text-slate-900 font-display">24.5% Rate</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Launchers -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="pop-card p-7 bg-gradient-to-br from-white via-blue-50/50 to-slate-50 border-2 border-blue-600/30 flex flex-col justify-between space-y-4">
+          <div class="space-y-2">
+            <div class="w-11 h-11 rounded-2xl bg-blue-800 text-white flex items-center justify-center font-bold shadow-md">
+              <i data-lucide="building-2" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-xl font-extrabold text-slate-900 font-display">Procurement Officer (Buyer) Portal</h3>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Upload GeM Tender Notice PDF, collect vendor proposals, and run automated AI side-by-side compliance matrices.
+            </p>
+          </div>
+          <button onclick="switchView('buyer')" class="self-start px-6 py-3 rounded-xl bg-blue-800 hover:bg-blue-900 text-white font-extrabold text-xs flex items-center gap-2 shadow-md hover:shadow-lg transition-all">
+            <span>Launch Buyer Workspace</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <div class="pop-card p-7 bg-gradient-to-br from-white via-emerald-50/50 to-slate-50 border-2 border-emerald-600/30 flex flex-col justify-between space-y-4">
+          <div class="space-y-2">
+            <div class="w-11 h-11 rounded-2xl bg-emerald-800 text-white flex items-center justify-center font-bold shadow-md">
+              <i data-lucide="user-check" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-xl font-extrabold text-slate-900 font-display">Vendor Pre-Check & Catalog Matcher</h3>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Audit your seller product catalog PDF against target government tenders to check compliance before formal bidding.
+            </p>
+          </div>
+          <button onclick="switchView('vendor')" class="self-start px-6 py-3 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-extrabold text-xs flex items-center gap-2 shadow-md hover:shadow-lg transition-all">
+            <span>Launch Vendor Pre-Check</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Recent Evaluations Summary -->
+      <div class="gov-panel p-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+          <h2 class="text-lg font-bold text-slate-900 font-display flex items-center gap-2">
+            <i data-lucide="award" class="w-5 h-5 text-blue-700"></i>
+            GeMVerifier Vendor Compliance Cards
+          </h2>
+          <button id="overview-load-demo-btn" class="px-3 py-1.5 text-xs font-bold rounded-xl bg-amber-50 text-amber-900 border border-amber-300">
+            Reload Evaluation Data
+          </button>
+        </div>
+        <div id="overview-vendor-cards" class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: BUYER PORTAL -->
+    <section id="view-buyer" class="view-section space-y-8">
+      <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-[#0B1E36] text-white rounded-2xl p-8 shadow-lg border-b-4 border-b-[#FF671F]">
+        <div class="max-w-3xl space-y-2">
+          <span class="bg-[#FF671F] text-white font-extrabold px-3 py-1 rounded-full text-xs uppercase tracking-wider shadow-sm">
+            🏛️ Buyer / Procurement Workspace
+          </span>
+          <h1 class="text-3xl font-black font-display">Tender Publisher & Procurement Management</h1>
+          <p class="text-sm text-slate-200 font-normal">
+            Upload official GeM Tender Notice PDFs and multiple vendor technical proposal PDFs to generate automated compliance matrices.
+          </p>
+        </div>
+      </div>
+
+      <div class="gov-panel p-6 md:p-8 space-y-6">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-5">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2 font-display">
+              <i data-lucide="upload" class="w-5 h-5 text-blue-800"></i>
+              Upload GeM Tender Notice & Vendor Bids
+            </h2>
+            <p class="text-xs text-slate-500 mt-1">Upload GeM Tender Notice (PDF) and vendor proposals (PDFs) to run technical evaluation.</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-3">
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+              1. GeM Tender Notice PDF <span class="text-rose-600">*</span>
+            </label>
+            <div class="border-2 border-dashed border-slate-300 bg-slate-50 hover:bg-blue-50/50 hover:border-blue-500 rounded-2xl p-6 text-center transition-all">
+              <input type="file" accept=".pdf" id="buyer-tender-file" class="hidden">
+              <label for="buyer-tender-file" class="cursor-pointer space-y-2 block">
+                <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center mx-auto">
+                  <i data-lucide="file-text" class="w-5 h-5"></i>
+                </div>
+                <div class="text-xs text-slate-700 font-semibold">Click to upload GeM Tender PDF</div>
+                <p id="buyer-tender-name" class="text-[10px] text-slate-500">Extracts specs, tolerances, & eligibility criteria</p>
+              </label>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+              2. Vendor Technical Proposals (PDFs) <span class="text-rose-600">*</span>
+            </label>
+            <div class="border-2 border-dashed border-slate-300 bg-slate-50 hover:bg-emerald-50/50 hover:border-emerald-500 rounded-2xl p-6 text-center transition-all">
+              <input type="file" accept=".pdf" multiple id="buyer-bids-files" class="hidden">
+              <label for="buyer-bids-files" class="cursor-pointer space-y-2 block">
+                <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center mx-auto">
+                  <i data-lucide="folder-plus" class="w-5 h-5"></i>
+                </div>
+                <div class="text-xs text-slate-700 font-semibold">Upload Vendor Proposals (Multiple)</div>
+                <p id="buyer-bids-count" class="text-[10px] text-slate-500">Extracts offered parameters & certificates</p>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-200 flex justify-end">
+          <button id="buyer-run-btn" type="button" class="px-6 py-3 rounded-xl font-extrabold text-xs bg-blue-800 hover:bg-blue-900 text-white shadow-md flex items-center gap-2">
+            <span>Run Technical Verification Matrix</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: VENDOR PORTAL -->
+    <section id="view-vendor" class="view-section space-y-8">
+      <div class="bg-gradient-to-r from-emerald-900 via-teal-900 to-[#046A38] text-white rounded-2xl p-8 shadow-lg border-b-4 border-b-amber-400">
+        <div class="max-w-3xl space-y-2">
+          <span class="bg-emerald-800 text-white font-extrabold px-3 py-1 rounded-full text-xs uppercase tracking-wider border border-emerald-600">
+            🏢 Vendor / Seller Pre-Check Portal
+          </span>
+          <h1 class="text-3xl font-black font-display">Product Catalog Audit & Tender Matcher</h1>
+          <p class="text-sm text-emerald-100 font-normal">
+            Audit your product catalog PDF against target tender specifications before formal submission to prevent mandatory spec disqualifications.
+          </p>
+        </div>
+      </div>
+
+      <div class="gov-panel p-6 md:p-8 space-y-6">
+        <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2 font-display">
+          <i data-lucide="shield-check" class="w-5 h-5 text-emerald-700"></i>
+          Run Catalog Pre-Check & Specification Audit
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-3">
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider">Target GeM Tender PDF</label>
+            <div class="border-2 border-dashed border-slate-300 bg-slate-50 hover:bg-blue-50/50 hover:border-blue-500 rounded-2xl p-6 text-center transition-all">
+              <input type="file" accept=".pdf" id="vendor-target-tender" class="hidden">
+              <label for="vendor-target-tender" class="cursor-pointer space-y-2 block">
+                <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center mx-auto">
+                  <i data-lucide="file-text" class="w-5 h-5"></i>
+                </div>
+                <div class="text-xs text-slate-700 font-semibold">Select Target Tender PDF</div>
+                <p id="vendor-tender-name" class="text-[10px] text-slate-500">Tender specifications to match against</p>
+              </label>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider">Your Product Catalog / Proposal PDF</label>
+            <div class="border-2 border-dashed border-slate-300 bg-slate-50 hover:bg-emerald-50/50 hover:border-emerald-500 rounded-2xl p-6 text-center transition-all">
+              <input type="file" accept=".pdf" id="vendor-catalog-file" class="hidden">
+              <label for="vendor-catalog-file" class="cursor-pointer space-y-2 block">
+                <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center mx-auto">
+                  <i data-lucide="award" class="w-5 h-5"></i>
+                </div>
+                <div class="text-xs text-slate-700 font-semibold">Select Vendor Catalog PDF</div>
+                <p id="vendor-catalog-name" class="text-[10px] text-slate-500">Offered product specifications & certificates</p>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-200 flex justify-end">
+          <button id="vendor-precheck-btn" type="button" class="px-6 py-3 rounded-xl font-extrabold text-xs bg-emerald-800 hover:bg-emerald-900 text-white shadow-md flex items-center gap-2">
+            <span>Run Pre-Check Audit</span>
+            <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 4: COMPLIANCE MATRIX VIEW -->
+    <section id="view-matrix" class="view-section space-y-8">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900 font-display flex items-center gap-2">
+            <i data-lucide="filter" class="w-6 h-6 text-blue-800"></i>
+            GeMVerifier Technical Compliance Matrix
+          </h2>
+          <p class="text-xs text-slate-500 mt-1">Official side-by-side comparison matrix with status badges & rationale details.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <a href="/api/report/export/latest?format=pdf" target="_blank" class="px-4 py-2 rounded-xl text-xs font-extrabold bg-rose-50 text-rose-800 border border-rose-300 flex items-center gap-1.5 shadow-sm hover:bg-rose-100 transition-all">
+            <i data-lucide="file-text" class="w-4 h-4 text-rose-700"></i> Export PDF Report
+          </a>
+          <a href="/api/report/export/latest?format=excel" target="_blank" class="px-4 py-2 rounded-xl text-xs font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-300 flex items-center gap-1.5 shadow-sm hover:bg-emerald-100 transition-all">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-700"></i> Export Excel Matrix
+          </a>
+        </div>
+      </div>
+
+      <div class="gov-panel p-6 space-y-5">
+        <div class="overflow-x-auto rounded-2xl border border-slate-300 shadow-sm">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr id="matrix-header-row" class="bg-slate-100 text-slate-800 font-bold border-b border-slate-300">
+                <th class="p-3.5 min-w-[180px]">Parameter Name</th>
+                <th class="p-3.5 min-w-[200px] bg-slate-200/50 border-x border-slate-300">Tender Requirement</th>
+              </tr>
+            </thead>
+            <tbody id="matrix-body" class="divide-y divide-slate-200 bg-white">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 5: ACCOUNT PROFILE -->
+    <section id="view-account" class="view-section space-y-8">
+      <div class="gov-panel p-8 max-w-2xl mx-auto space-y-6">
+        <div class="flex items-center space-x-4 border-b border-slate-200 pb-5">
+          <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#0B1E36] to-blue-900 text-white font-black text-2xl flex items-center justify-center shadow-md border-2 border-[#FF671F]">
+            <span id="account-avatar">G</span>
+          </div>
+          <div>
+            <h2 id="account-name" class="text-xl font-bold text-slate-900 font-display">Government Official Account</h2>
+            <p id="account-email" class="text-xs text-slate-500">official@gem.gov.in</p>
+            <span id="account-role-tag" class="inline-block mt-1 text-[10px] uppercase font-extrabold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-900 border border-blue-200">
+              Role: Both (Buyer & Vendor)
+            </span>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Select Active Account Role</h3>
+          <p class="text-xs text-slate-600">Choose your default portal layout persona:</p>
+          
+          <div class="grid grid-cols-3 gap-3">
+            <button id="select-role-vendor" class="border border-slate-300 rounded-2xl p-4 text-center hover:border-blue-700">
+              <div class="text-xs font-bold text-slate-900">Vendor (Seller)</div>
+              <div class="text-[10px] text-slate-500">Bidder / Seller mode</div>
+            </button>
+
+            <button id="select-role-buyer" class="border border-slate-300 rounded-2xl p-4 text-center hover:border-blue-700">
+              <div class="text-xs font-bold text-slate-900">Buyer (Procurement)</div>
+              <div class="text-[10px] text-slate-500">Tender Publisher mode</div>
+            </button>
+
+            <button id="select-role-both" class="border-2 border-blue-800 bg-blue-50 rounded-2xl p-4 text-center">
+              <div class="text-xs font-bold text-blue-900">Both (Dual Role)</div>
+              <div class="text-[10px] text-blue-700">Full Dual Persona</div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- INTERACTIVE OEM COMPANY PRE-CHECK & VERIFICATION MODAL -->
+  <div id="company-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-slate-300 shadow-2xl max-w-lg w-full p-6 space-y-5 relative overflow-hidden animate-pop-in">
+      <button id="close-company-btn" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 font-bold text-sm">✕</button>
+
+      <div class="flex items-center space-x-4 border-b border-slate-200 pb-4">
+        <div class="w-14 h-14 rounded-2xl overflow-hidden bg-slate-100 border border-slate-300 shrink-0">
+          <img id="modal-company-img" src="" alt="Company Photo" class="w-full h-full object-cover">
+        </div>
+        <div>
+          <h3 id="modal-company-name" class="text-xl font-extrabold text-slate-900 font-display">Company Name</h3>
+          <span id="modal-company-badge" class="inline-block text-[10px] uppercase font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+            CLASS-1 SUPPLIER
+          </span>
+        </div>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-700">
+        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-1">
+          <p class="font-bold text-slate-900">Pre-Check Match Result against Active Tender:</p>
+          <p id="modal-company-score" class="text-lg font-black text-emerald-700 font-display">100% Score Qualified</p>
+          <p id="modal-company-specs" class="text-[11px] text-slate-600 mt-1">Intel i7 13th Gen, 32GB DDR5, 1TB SSD, 3 Yr Onsite OEM Warranty</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 text-[11px]">
+          <div class="bg-blue-50 p-3 rounded-xl border border-blue-200">
+            <span class="text-slate-500 font-semibold">Annual GeM Turnover:</span>
+            <p id="modal-company-turnover" class="font-bold text-blue-900 text-sm">INR 120 Crores</p>
+          </div>
+          <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-200">
+            <span class="text-slate-500 font-semibold">GSTIN & MII Status:</span>
+            <p class="font-bold text-emerald-900 text-sm">Verified & Active</p>
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <button onclick="switchView('vendor'); document.getElementById('company-modal').classList.add('hidden');" class="w-full py-3 rounded-xl bg-blue-800 hover:bg-blue-900 text-white font-extrabold text-xs shadow-md flex items-center justify-center gap-2">
+            <span>Proceed to Vendor Catalog Audit</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GEM-BOT CHAT DRAWER MODAL -->
+  <div id="gem-bot-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-end p-4">
+    <div class="bg-white rounded-3xl border border-slate-300 shadow-2xl max-w-lg w-full h-[90vh] flex flex-col relative overflow-hidden animate-pop-in">
+      
+      <div class="bg-gradient-to-r from-[#0B1E36] via-blue-900 to-indigo-950 text-white p-5 flex items-center justify-between border-b border-blue-700">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-full bg-[#FF671F] text-white flex items-center justify-center font-bold shadow-md">
+            <i data-lucide="bot" class="w-6 h-6 animate-mascot-wave"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-base font-display text-white">GeM-Bot Verification Assistant</h3>
+            <p class="text-[11px] text-amber-300 flex items-center gap-1 font-semibold">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Live AI Verification Assistant
+            </p>
+          </div>
+        </div>
+        <button id="close-bot-btn" class="text-white hover:text-amber-400 font-black text-lg px-2 py-1">✕</button>
+      </div>
+
+      <div class="bg-slate-100 p-3 border-b border-slate-200 flex items-center space-x-2 overflow-x-auto text-[11px]">
+        <button class="bot-pill px-3 py-1 bg-white border border-slate-300 rounded-full font-bold text-slate-700 hover:bg-blue-800 hover:text-white shrink-0">
+          ❓ Why Apex Disqualified?
+        </button>
+        <button class="bot-pill px-3 py-1 bg-white border border-slate-300 rounded-full font-bold text-slate-700 hover:bg-blue-800 hover:text-white shrink-0">
+          💻 CPU Core Requirement
+        </button>
+        <button class="bot-pill px-3 py-1 bg-white border border-slate-300 rounded-full font-bold text-slate-700 hover:bg-blue-800 hover:text-white shrink-0">
+          📜 Required Certificates
+        </button>
+      </div>
+
+      <div id="bot-chat-log" class="flex-1 p-5 overflow-y-auto space-y-4 bg-slate-50 text-xs">
+        <div class="flex items-start space-x-3">
+          <div class="w-8 h-8 rounded-full bg-[#FF671F] text-white flex items-center justify-center shrink-0">
+            <i data-lucide="bot" class="w-4 h-4"></i>
+          </div>
+          <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm max-w-[85%] text-slate-800 space-y-1.5">
+            <p class="font-bold text-blue-900">Namaste! I am GeM-Bot 🤖</p>
+            <p>I am your AI Verification Assistant for Government e-Marketplace tenders & bid proposals. Ask me any specification question or click a prompt above!</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 bg-white border-t border-slate-200 flex items-center space-x-2">
+        <input type="text" id="bot-input-text" placeholder="Ask GeM-Bot e.g. Why was Apex disqualified?..." class="flex-1 bg-slate-100 border border-slate-300 rounded-xl px-4 py-2.5 text-xs text-slate-900 outline-none focus:bg-white focus:border-blue-700">
+        <button id="bot-send-btn" class="px-4 py-2.5 rounded-xl bg-blue-800 hover:bg-blue-900 text-white font-extrabold text-xs shadow-md">
+          Ask AI
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login / Register Modal -->
+  <div id="auth-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-slate-300 shadow-2xl max-w-md w-full p-6 space-y-5 relative">
+      <button id="close-modal-btn" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 font-bold text-sm">✕</button>
+      
+      <div class="text-center space-y-1">
+        <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-800 flex items-center justify-center mx-auto mb-2">
+          <i data-lucide="badge-check" class="w-6 h-6 text-[#FF671F]"></i>
+        </div>
+        <h3 class="text-xl font-extrabold text-slate-900 font-display">GeMVerifier User Portal</h3>
+        <p class="text-xs text-slate-500">Register or sign in to save your personalized tenders & bids</p>
+      </div>
+
+      <div class="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+        <button id="tab-login" class="w-1/2 py-2 text-xs font-bold rounded-lg bg-white text-slate-900 shadow-sm">Sign In</button>
+        <button id="tab-register" class="w-1/2 py-2 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900">Register</button>
+      </div>
+
+      <div id="auth-error" class="hidden bg-rose-50 border border-rose-200 text-rose-800 text-xs p-3 rounded-lg"></div>
+
+      <form id="form-login" class="space-y-3">
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Email Address</label>
+          <input type="email" id="login-email" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:border-blue-700 outline-none">
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Password</label>
+          <input type="password" id="login-password" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:border-blue-700 outline-none">
+        </div>
+        <button type="submit" class="w-full py-3 rounded-xl bg-blue-800 hover:bg-blue-900 text-white font-extrabold text-xs shadow-md">Sign In to Dashboard</button>
+      </form>
+
+      <form id="form-register" class="hidden space-y-3">
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Full Name</label>
+          <input type="text" id="reg-name" required placeholder="e.g. Rajesh Kumar" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:border-blue-700 outline-none">
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Email Address</label>
+          <input type="email" id="reg-email" required placeholder="name@org.gov.in" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:border-blue-700 outline-none">
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Password</label>
+          <input type="password" id="reg-password" required minlength="6" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:border-blue-700 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Select Your Primary Role</label>
+          <div class="grid grid-cols-3 gap-2">
+            <label class="border border-slate-300 rounded-xl p-2 text-center cursor-pointer hover:bg-blue-50 has-[:checked]:bg-blue-50 has-[:checked]:border-blue-700">
+              <input type="radio" name="reg-role" value="VENDOR" class="hidden">
+              <div class="text-[11px] font-bold text-slate-900">Vendor</div>
+              <div class="text-[9px] text-slate-500">Seller / Bidder</div>
+            </label>
+            <label class="border border-slate-300 rounded-lg p-2 text-center cursor-pointer hover:bg-blue-50 has-[:checked]:bg-blue-50 has-[:checked]:border-blue-700">
+              <input type="radio" name="reg-role" value="BIDDER" class="hidden">
+              <div class="text-[11px] font-bold text-slate-900">Buyer</div>
+              <div class="text-[9px] text-slate-500">Procurement</div>
+            </label>
+            <label class="border border-slate-300 rounded-lg p-2 text-center cursor-pointer hover:bg-blue-50 has-[:checked]:bg-blue-50 has-[:checked]:border-blue-700">
+              <input type="radio" name="reg-role" value="BOTH" checked class="hidden">
+              <div class="text-[11px] font-bold text-blue-900">Both</div>
+              <div class="text-[9px] text-blue-700">Dual Persona</div>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Organization / Firm Name</label>
+          <input type="text" id="reg-org" placeholder="e.g. National Info Systems Ltd" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:border-blue-700 outline-none">
+        </div>
+        <button type="submit" class="w-full py-3 rounded-xl bg-blue-800 hover:bg-blue-900 text-white font-extrabold text-xs shadow-md">Create Account</button>
+      </form>
+    </div>
+  </div>
+
+  <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-600 mt-12 shadow-inner">
+    <p>© 2026 Government e-Marketplace (GeM) - GeMVerifier Engine. All Rights Reserved.</p>
+  </footer>
+
+  <script>
+    let activeView = "overview";
+    let currentUser = null;
+    let carouselPos = 0;
+
+    const DEMO_DATA = {
+      report_id: "GEM-EVAL-2026-001",
+      tender_info: {
+        item_name: "High-Performance Workstation Laptops (GeM Custom Bid)",
+        technical_parameters: [
+          { parameter_name: "Processor / CPU", required_value: "Intel Core i7 13th Gen (16 Cores) or AMD Ryzen 7 7840HS", mandatory: true, tolerance: "Min 14 Cores" },
+          { parameter_name: "RAM / Memory", required_value: "32 GB DDR5 5600MHz", mandatory: true, tolerance: "Min 32 GB" },
+          { parameter_name: "Storage Capacity", required_value: "1 TB NVMe M.2 PCIe 4.0 SSD", mandatory: true, tolerance: "Min 1 TB" },
+          { parameter_name: "Graphics Card (GPU)", required_value: "NVIDIA RTX 4060 8GB GDDR6 VRAM", mandatory: false, tolerance: "Min 6GB VRAM" },
+          { parameter_name: "Display Screen", required_value: "16 Inch WQXGA (2560x1600) 165Hz IPS", mandatory: false, tolerance: "+/- 0.4 inch" },
+          { parameter_name: "Warranty & Support", required_value: "3 Years Onsite Comprehensive OEM Warranty", mandatory: true, tolerance: "Min 3 Years" }
+        ]
+      },
+      vendors: [
+        {
+          vendor_name: "TechNova Solutions Ltd",
+          bid_id: "BID-GEM-9901",
+          technical_score: 100.0,
+          is_disqualified: false,
+          disqualification_reasons: [],
+          missing_documents: [],
+          parameter_results: [
+            { parameter_name: "Processor / CPU", status: "COMPLIANT", vendor_offered_value: "Intel Core i7-13700H (14 Cores / 20 Threads)", explanation: "Satisfies minimum core threshold." },
+            { parameter_name: "RAM / Memory", status: "COMPLIANT", vendor_offered_value: "32 GB DDR5 5600MHz", explanation: "Exact match with tender requirements." },
+            { parameter_name: "Storage Capacity", status: "COMPLIANT", vendor_offered_value: "1 TB NVMe Gen4 SSD", explanation: "Meets 1 TB minimum." },
+            { parameter_name: "Graphics Card (GPU)", status: "COMPLIANT", vendor_offered_value: "NVIDIA RTX 4060 8GB GDDR6", explanation: "Exact match." },
+            { parameter_name: "Display Screen", status: "COMPLIANT", vendor_offered_value: "16.0 Inch QHD+ (2560x1600) 165Hz", explanation: "High semantic equivalence." },
+            { parameter_name: "Warranty & Support", status: "COMPLIANT", vendor_offered_value: "3 Years Onsite OEM Warranty", explanation: "Satisfies 3 Year onsite req." }
+          ]
+        },
+        {
+          vendor_name: "Apex Micro Systems",
+          bid_id: "BID-GEM-8812",
+          technical_score: 64.7,
+          is_disqualified: true,
+          disqualification_reasons: ["Failed mandatory technical parameter 'Processor / CPU': Offered CPU is below 14 cores minimum."],
+          missing_documents: ["ISO Quality Certificate", "Financial Turnover Certificate"],
+          parameter_results: [
+            { parameter_name: "Processor / CPU", status: "NON_COMPLIANT", vendor_offered_value: "Intel Core i5-12400 (6 Cores)", explanation: "Below minimum required 14 Cores." },
+            { parameter_name: "RAM / Memory", status: "NON_COMPLIANT", vendor_offered_value: "16 GB DDR4 3200MHz", explanation: "Offered 16 GB is below required 32 GB." },
+            { parameter_name: "Storage Capacity", status: "COMPLIANT", vendor_offered_value: "1 TB NVMe M.2 SSD", explanation: "Meets 1 TB requirement." },
+            { parameter_name: "Graphics Card (GPU)", status: "NON_COMPLIANT", vendor_offered_value: "NVIDIA RTX 3050 4GB", explanation: "VRAM inferior to required 8GB." },
+            { parameter_name: "Display Screen", status: "NEEDS_REVIEW", vendor_offered_value: "15.6 Inch Full HD (1920x1080)", explanation: "Partial match. Within size tolerance but FHD." },
+            { parameter_name: "Warranty & Support", status: "COMPLIANT", vendor_offered_value: "3 Years Onsite Warranty", explanation: "Exact match." }
+          ]
+        },
+        {
+          vendor_name: "Paramount Enterprises",
+          bid_id: "BID-GEM-7740",
+          technical_score: 94.1,
+          is_disqualified: false,
+          disqualification_reasons: [],
+          missing_documents: [],
+          parameter_results: [
+            { parameter_name: "Processor / CPU", status: "COMPLIANT", vendor_offered_value: "AMD Ryzen 7 7840HS (8 Cores / 16 Threads)", explanation: "Exact match with AMD spec." },
+            { parameter_name: "RAM / Memory", status: "COMPLIANT", vendor_offered_value: "64 GB DDR5 5600MHz", explanation: "Exceeds 32 GB requirement." },
+            { parameter_name: "Storage Capacity", status: "COMPLIANT", vendor_offered_value: "2 TB NVMe M.2 SSD", explanation: "Exceeds 1 TB requirement." },
+            { parameter_name: "Graphics Card (GPU)", status: "COMPLIANT", vendor_offered_value: "NVIDIA RTX 4060 8GB", explanation: "Exact match." },
+            { parameter_name: "Display Screen", status: "NEEDS_REVIEW", vendor_offered_value: "15.6 Inch QHD (2560x1440) OLED", explanation: "Partial match. OLED display." },
+            { parameter_name: "Warranty & Support", status: "COMPLIANT", vendor_offered_value: "3 Years Onsite Warranty", explanation: "Satisfies requirement." }
+          ]
+        }
+      ]
+    };
+
+    // Interactive Company Modal Functionality
+    function openCompanyModal(name, score, specs, turnover, badge, imgUrl) {
+      document.getElementById('modal-company-name').innerText = name;
+      document.getElementById('modal-company-score').innerText = score;
+      document.getElementById('modal-company-specs').innerText = specs;
+      document.getElementById('modal-company-turnover').innerText = turnover;
+      document.getElementById('modal-company-badge').innerText = badge;
+      document.getElementById('modal-company-img').src = imgUrl;
+      document.getElementById('company-modal').classList.remove('hidden');
+    }
+
+    document.getElementById('close-company-btn').addEventListener('click', () => {
+      document.getElementById('company-modal').classList.add('hidden');
+    });
+
+    // Sticky GeM-Bot Click Handler
+    document.getElementById('sticky-gem-bot').addEventListener('click', () => {
+      document.getElementById('gem-bot-modal').classList.remove('hidden');
+    });
+
+    document.getElementById('gem-bot-banner').addEventListener('click', () => {
+      document.getElementById('gem-bot-modal').classList.remove('hidden');
+    });
+    
+    document.getElementById('close-bot-btn').addEventListener('click', () => {
+      document.getElementById('gem-bot-modal').classList.add('hidden');
+    });
+
+    function addBotResponse(text) {
+      const chatLog = document.getElementById('bot-chat-log');
+      chatLog.innerHTML += `
+        <div class="flex items-start space-x-3 animate-fadeIn">
+          <div class="w-8 h-8 rounded-full bg-[#FF671F] text-white flex items-center justify-center shrink-0">
+            <i data-lucide="bot" class="w-4 h-4"></i>
+          </div>
+          <div class="bg-blue-50 border border-blue-200 p-3.5 rounded-2xl text-slate-900 font-medium space-y-1 max-w-[85%]">
+            ${text}
+          </div>
+        </div>
+      `;
+      chatLog.scrollTop = chatLog.scrollHeight;
+      lucide.createIcons();
+    }
+
+    function handleBotQuery(query) {
+      const q = query.toLowerCase();
+      if (q.includes('apex') || q.includes('disqualif')) {
+        addBotResponse(`⚠️ <strong>Apex Micro Systems Disqualification Rationale:</strong><br>1. Failed mandatory parameter <em>Processor / CPU</em>: Offered Intel i5-12400 (6 Cores) is below the required 14 Cores threshold.<br>2. Missing mandatory documents: <em>ISO 9001 Certificate</em> and <em>Audited Turnover Statement</em>.`);
+      } else if (q.includes('cpu') || q.includes('processor') || q.includes('ram')) {
+        addBotResponse(`💻 <strong>Tender Specification Summary:</strong><br>• Minimum CPU: Intel Core i7 13th Gen (16 Cores) or AMD Ryzen 7 7840HS (Min 14 Cores threshold).<br>• RAM Requirement: 32 GB DDR5 5600MHz.<br>• Storage Requirement: 1 TB NVMe SSD PCIe 4.0.`);
+      } else if (q.includes('certif') || q.includes('iso') || q.includes('document')) {
+        addBotResponse(`📜 <strong>Required Eligibility Certificates:</strong><br>1. Minimum Annual Turnover of INR 50 Lakhs.<br>2. Valid ISO 9001:2015 Quality Certificate.<br>3. Past 3 Years Government Procurement Experience.<br>4. GST Registration Certificate.`);
+      } else {
+        addBotResponse(`🤖 <strong>GeMVerifier AI Diagnosis:</strong><br>I analyzed tender reference <strong>GEM/2026/B/8941205</strong>. Out of 3 vendor proposals evaluated, 2 vendors (TechNova Solutions & Paramount Enterprises) passed technical compliance, while 1 vendor (Apex Micro Systems) was disqualified due to mandatory CPU core deficiency.`);
+      }
+    }
+
+    document.getElementById('bot-send-btn').addEventListener('click', () => {
+      const input = document.getElementById('bot-input-text');
+      const val = input.value.trim();
+      if (val) {
+        handleBotQuery(val);
+        input.value = '';
+      }
+    });
+
+    document.querySelectorAll('.bot-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        handleBotQuery(btn.innerText);
+      });
+    });
+
+    // Scroll Listener for Header Shrink & Orbit Ring Rotation
+    window.onscroll = function() {
+      const header = document.getElementById('main-header');
+      const orbitRing = document.getElementById('scroll-orbit-ring');
+      const scrollY = window.scrollY;
+
+      if (scrollY > 40) {
+        header.classList.add('scrolled');
+      } else {
+        header.classList.remove('scrolled');
+      }
+
+      if (orbitRing) {
+        orbitRing.style.transform = `rotate(${scrollY * 0.25}deg) translateY(${scrollY * 0.05}px)`;
+      }
+    };
+
+    function switchView(viewName) {
+      activeView = viewName;
+      document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
+      const activeSec = document.getElementById(`view-${viewName}`);
+      if (activeSec) activeSec.classList.add('active');
+
+      document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.className = "nav-tab px-4 py-2 text-xs font-bold rounded-xl transition-all text-slate-200 hover:bg-blue-800 flex items-center gap-2";
+      });
+      const activeNav = document.getElementById(`nav-${viewName}`);
+      if (activeNav) {
+        activeNav.className = "nav-tab px-4 py-2 text-xs font-bold rounded-xl transition-all bg-[#FF671F] text-white shadow-md flex items-center gap-2";
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function updateCarousel() {
+      const track = document.getElementById('carousel-track');
+      if (track) {
+        const step = 370;
+        const maxScroll = (track.children.length - 1) * step;
+        if (carouselPos > maxScroll) carouselPos = 0;
+        if (carouselPos < 0) carouselPos = maxScroll;
+        track.style.transform = `translateX(-${carouselPos}px)`;
+      }
+    }
+
+    document.getElementById('carousel-next-btn').addEventListener('click', () => {
+      carouselPos += 370;
+      updateCarousel();
+    });
+
+    document.getElementById('carousel-prev-btn').addEventListener('click', () => {
+      carouselPos -= 370;
+      updateCarousel();
+    });
+
+    setInterval(() => {
+      carouselPos += 370;
+      updateCarousel();
+    }, 4000);
+
+    function renderAuthWidget() {
+      const widget = document.getElementById('auth-widget');
+      if (currentUser) {
+        widget.innerHTML = `
+          <div class="flex items-center space-x-3 bg-slate-100 p-1.5 px-3 rounded-xl border border-slate-200">
+            <div class="w-8 h-8 rounded-full bg-[#0B1E36] text-white font-bold text-xs flex items-center justify-center border border-[#FF671F]">
+              ${currentUser.name.charAt(0).toUpperCase()}
+            </div>
+            <div class="text-left text-xs">
+              <p class="font-bold text-slate-900 leading-tight">${currentUser.name}</p>
+              <p class="text-[10px] text-slate-500">${currentUser.organization_name || currentUser.email}</p>
+            </div>
+            <button id="logout-btn" class="text-xs text-rose-600 hover:text-rose-800 font-bold px-2 py-1 bg-white rounded border border-rose-200">Logout</button>
+          </div>
+        `;
+        document.getElementById('logout-btn').addEventListener('click', () => {
+          localStorage.removeItem('gem_token');
+          currentUser = null;
+          renderAuthWidget();
+        });
+      } else {
+        widget.innerHTML = `
+          <button id="open-auth-btn" class="px-4 py-2 rounded-xl text-xs font-bold bg-[#0B1E36] hover:bg-blue-900 text-white shadow-sm flex items-center gap-1.5">
+            <i data-lucide="user-check" class="w-3.5 h-3.5 text-[#FF671F]"></i>
+            <span>Register / Sign In</span>
+          </button>
+        `;
+        document.getElementById('open-auth-btn').addEventListener('click', () => {
+          document.getElementById('auth-modal').classList.remove('hidden');
+        });
+      }
+      lucide.createIcons();
+    }
+
+    function renderDashboard(data) {
+      const overviewCards = document.getElementById('overview-vendor-cards');
+      if (overviewCards) {
+        overviewCards.innerHTML = data.vendors.map(v => `
+          <div class="pop-card p-5 relative overflow-hidden flex flex-col justify-between">
+            <div class="h-1.5 ${v.is_disqualified ? 'bg-rose-600' : 'bg-emerald-600'} absolute top-0 left-0 right-0"></div>
+            <div>
+              <div class="flex items-start justify-between gap-2 mb-3">
+                <div>
+                  <h3 class="font-bold text-slate-900 text-base font-display">${v.vendor_name}</h3>
+                  <p class="text-[11px] text-slate-500">Bid Ref: ${v.bid_id || 'N/A'}</p>
+                </div>
+                <span class="text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-full border ${v.is_disqualified ? 'bg-rose-50 border-rose-200 text-rose-800 font-bold' : 'bg-emerald-50 border-emerald-200 text-emerald-800 font-bold'}">
+                  ${v.is_disqualified ? 'Disqualified' : 'Qualified'}
+                </span>
+              </div>
+
+              <div class="bg-slate-50 rounded-xl p-4 my-3 border border-slate-200">
+                <div class="flex items-baseline justify-between mb-2">
+                  <span class="text-xs font-semibold text-slate-600">Technical Score</span>
+                  <span class="text-2xl font-black ${v.is_disqualified ? 'text-rose-700' : 'text-emerald-700'} font-display">${v.technical_score}%</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                  <div class="h-2 rounded-full ${v.is_disqualified ? 'bg-rose-600' : 'bg-emerald-600'}" style="width: ${v.technical_score}%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      const headerRow = document.getElementById('matrix-header-row');
+      headerRow.innerHTML = `
+        <th class="p-3.5 min-w-[180px]">Parameter Name</th>
+        <th class="p-3.5 min-w-[200px] bg-slate-200/50 border-x border-slate-300">Tender Requirement</th>
+        ${data.vendors.map(v => `
+          <th class="p-3.5 min-w-[220px]">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-slate-900">${v.vendor_name}</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded border ${v.is_disqualified ? 'bg-rose-100 text-rose-800 border-rose-300' : 'bg-emerald-100 text-emerald-800 border-emerald-300'}">${v.technical_score}%</span>
+            </div>
+          </th>
+        `).join('')}
+      `;
+
+      const tbody = document.getElementById('matrix-body');
+      tbody.innerHTML = data.tender_info.technical_parameters.map(tp => `
+        <tr class="hover:bg-slate-50 transition-colors">
+          <td class="p-3.5 font-semibold text-slate-900">
+            <div class="flex items-center gap-1.5">
+              <span>${tp.parameter_name}</span>
+              ${tp.mandatory ? '<span class="text-[9px] uppercase font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">Mandatory</span>' : ''}
+            </div>
+          </td>
+          <td class="p-3.5 text-slate-800 font-mono bg-slate-50/80 border-x border-slate-200 font-medium">${tp.required_value}</td>
+          ${data.vendors.map(v => {
+            const res = v.parameter_results.find(r => r.parameter_name === tp.parameter_name);
+            const st = res ? res.status : 'N/A';
+            const badgeClass = st === 'COMPLIANT' ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold' : (st === 'NON_COMPLIANT' ? 'bg-rose-50 text-rose-800 border-rose-300 font-bold' : 'bg-amber-50 text-amber-900 border-amber-300 font-bold');
+            return `
+              <td class="p-3.5 space-y-1">
+                <span class="inline-flex items-center text-[10px] px-2.5 py-0.5 rounded-full border ${badgeClass}">${st}</span>
+                <p class="text-slate-800 font-mono text-[11px] font-medium truncate">${res ? res.vendor_offered_value : 'NOT PROVIDED'}</p>
+              </td>
+            `;
+          }).join('')}
+        </tr>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    document.getElementById('nav-overview').addEventListener('click', () => switchView('overview'));
+    document.getElementById('nav-buyer').addEventListener('click', () => switchView('buyer'));
+    document.getElementById('nav-vendor').addEventListener('click', () => switchView('vendor'));
+    document.getElementById('nav-matrix').addEventListener('click', () => switchView('matrix'));
+    document.getElementById('nav-account').addEventListener('click', () => switchView('account'));
+
+    document.getElementById('close-modal-btn').addEventListener('click', () => {
+      document.getElementById('auth-modal').classList.add('hidden');
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderAuthWidget();
+      renderDashboard(DEMO_DATA);
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>

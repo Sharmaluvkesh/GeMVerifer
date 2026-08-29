@@ -1,0 +1,25 @@
+# Environments & Virtual Envs
+venv/
+.venv/
+env/
+ENV/
+*.venv
+
+# Python Cache & Databases
+__pycache__/
+*.py[cod]
+*$py.class
+*.db
+*.sqlite3
+
+# Node & Frontend Dependencies
+node_modules/
+dist/
+.cache/
+
+# IDE & OS Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
